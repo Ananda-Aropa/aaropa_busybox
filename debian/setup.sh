@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 exit_check() { [ "$1" = 0 ] || exit "$1"; }
 trap 'exit_check $?' EXIT
 
-rawurlencode() {
+raw_url_encode() {
   local string=$1
   local strlen=${#string}
   local encoded pos c o
@@ -36,25 +36,24 @@ fi
 _latest_tag=$($DOWNLOAD "api/v4/projects/installer-team%2Fbusybox/repository/tags" | grep '"name":' | head -1 | awk -F '"' '{print $4}')
 _branch=${_latest_tag%%/*}
 _full_ver=${_latest_tag##*/}
-_encoded_ver=$(rawurlencode "$_full_ver")
+_encoded_ver=$(raw_url_encode "$_full_ver")
 
 # Fetch source package
 $DOWNLOAD "installer-team/busybox/-/archive/${_branch}/${_encoded_ver}/busybox-${_branch}-${_encoded_ver}.tar.gz" | tar -xzf -
-cp -rn busybox-${_branch}-${_full_ver}/* .
+cp -rn busybox-${_branch}-${_full_ver}/* ..
 rm -rf busybox-${_branch}-${_full_ver}
 
 # Modify control file
-control=debian/control.tmp
-touch $control
+touch control.tmp
 
 IFS=$'\n'
 while read -r line; do
-  echo -e "$line" >>$control
+  echo -e "$line" >>control.tmp
   [ "$line" ] || break
-done <${control%.tmp}
+done <control
 unset IFS
 
-cat <<'EOF' >>$control
+cat <<'EOF' >>control.tmp
 Package: busybox-aaropa
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
@@ -77,21 +76,20 @@ Description: Tiny utilities for small and embedded systems
  This variant of busybox is only used in BlissOS initrd.img.
 EOF
 
-cp -f $control ${control%.tmp}
+cp -f control.tmp control
 
 # Modify build rules
-rules=debian/rules.tmp
-touch $rules
+touch rules.tmp
 
 IFS=$'\n'
 while read -r line; do
   case "$line" in
-  flavours\ =\ *) echo 'flavours = blissos' >>$rules ;;
-  *test-deb*) echo -e "${line//test-deb/test-blissos}" >>$rules ;;
+  flavours\ =\ *) echo 'flavours = blissos' >>rules.tmp ;;
+  *test-deb*) echo -e "${line//test-deb/test-blissos}" >>rules.tmp ;;
   execute_*) break ;;
-  *) echo -e "$line" >>$rules ;;
+  *) echo -e "$line" >>rules.tmp ;;
   esac
-done <${rules%.tmp}
+done <rules
 unset IFS
 
-cp -f $rules ${rules%.tmp}
+cp -f rules.tmp rules
