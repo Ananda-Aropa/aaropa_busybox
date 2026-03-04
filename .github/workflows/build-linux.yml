@@ -62,7 +62,7 @@ jobs:
           distro: debian:unstable-slim
           arch: amd64
           docker_arch_specific: true
-          build_dependency_packages: libxcrypt-dev
+          build_dependency_packages: libcrypt-dev
 
       - name: Extract artifact
         run: unzip -o built-deb-files.zip
